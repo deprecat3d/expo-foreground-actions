@@ -28,7 +28,7 @@ export class NotForegroundedError extends Error {
   }
 }
 
-const startForegroundAction = async (options?: AndroidSettings): Promise<number> => {
+export const startForegroundAction = async (options?: AndroidSettings): Promise<number> => {
   if (Platform.OS === "android" && !options) {
     throw new Error("Foreground action options cannot be null on android");
   }
