@@ -20,7 +20,6 @@ class ExpoForegroundActionsModule : Module() {
     private val intentMap: MutableMap<Int, Intent> = mutableMapOf()
     private var currentReferenceId: Int = 0
 
-
     // Each module class must implement the definition function. The definition consists of components
     // that describes the module's functionality and behavior.
     // See https://docs.expo.dev/modules/module-api for more details about available components.
@@ -142,4 +141,11 @@ class ExpoForegroundActionsModule : Module() {
         get() = requireNotNull(this.context.applicationContext) {
             "React Application Context is null"
         }
+
+    fun emitExpirationEvent(identifier: Int, remaining: Double) {
+        sendEvent(ON_EXPIRATION_EVENT, mapOf(
+            "identifier" to identifier,
+            "remaining" to remaining
+        ))
+    }
 }
