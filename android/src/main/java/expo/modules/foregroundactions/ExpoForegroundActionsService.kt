@@ -15,16 +15,8 @@ import androidx.core.app.NotificationCompat
 import com.facebook.react.HeadlessJsTaskService
 import com.facebook.react.bridge.Arguments
 import com.facebook.react.jstasks.HeadlessJsTaskConfig
-import expo.modules.kotlin.AppContext
-import expo.modules.kotlin.ModuleHolder
-import expo.modules.kotlin.modules.Module
-import expo.modules.kotlin.Promise
-import expo.modules.kotlin.exception.CodedException
 import com.facebook.react.ReactApplication
-import com.facebook.react.bridge.WritableMap
-import com.facebook.react.bridge.WritableNativeMap
-import com.facebook.react.modules.core.DeviceEventManagerModule
-
+import expo.modules.core.ModulesProvider
 
 class ExpoForegroundActionsService : HeadlessJsTaskService() {
     companion object {
@@ -65,12 +57,15 @@ class ExpoForegroundActionsService : HeadlessJsTaskService() {
         try {
             val reactApplication = applicationContext as ReactApplication
             val reactContext = reactApplication.reactNativeHost.reactInstanceManager.currentReactContext
+                ?: return // Return if no React context
 
-            // Get module through the module registry
-            val appContext = AppContext(reactContext)
-            val module = appContext.moduleRegistry.getModule(ExpoForegroundActionsModule::class.java)
+            // Get the module through Expo's ModulesProvider
+            val modulesProvider = reactContext.getNativeModule(expo.modules.core.ModulesProvider::class.java)
+                ?: return
 
+            val module = modulesProvider.getModule(ExpoForegroundActionsModule::class.java)
             module?.emitExpirationEvent(notificationId, 0.0)
+
         } catch (e: Exception) {
             println("Failed to emit expiration event: ${e.message}")
         }
