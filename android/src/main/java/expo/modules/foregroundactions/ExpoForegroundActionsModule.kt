@@ -7,6 +7,10 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.Color
 import android.os.Build
+import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
+import android.os.ResultReceiver
 import expo.modules.kotlin.Promise
 import expo.modules.kotlin.exception.CodedException
 import expo.modules.kotlin.exception.toCodedException
@@ -17,6 +21,12 @@ import expo.modules.kotlin.modules.ModuleDefinition
 const val ON_EXPIRATION_EVENT = "onExpirationEvent"
 
 class ExpoForegroundActionsModule : Module() {
+    companion object {
+        private const val RECEIVER_KEY = "receiver"
+        private const val NOTIFICATION_ID_KEY = "notificationId"
+        private const val RESULT_CODE_OK = 0
+    }
+
     private val intentMap: MutableMap<Int, Intent> = mutableMapOf()
     private var currentReferenceId: Int = 0
 
@@ -46,8 +56,21 @@ class ExpoForegroundActionsModule : Module() {
                 intent.putExtra("notificationMaxProgress", options.notificationMaxProgress)
                 intent.putExtra("notificationIndeterminate", options.notificationIndeterminate)
                 intent.putExtra("linkingURI", options.linkingURI)
-                currentReferenceId++
 
+                // Add ResultReceiver
+                intent.putExtra(RECEIVER_KEY, object : ResultReceiver(Handler(Looper.getMainLooper())) {
+                    override fun onReceiveResult(resultCode: Int, resultData: Bundle?) {
+                        if (resultCode == RESULT_CODE_OK) {
+                            val notificationId = resultData?.getInt(NOTIFICATION_ID_KEY)
+                            sendEvent(ON_EXPIRATION_EVENT, mapOf(
+                                "identifier" to notificationId,
+                                "remaining" to 0.0
+                            ))
+                        }
+                    }
+                })
+
+                currentReferenceId++
                 intentMap[currentReferenceId] = intent
                 intent.putExtra("notificationId", currentReferenceId)
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -141,11 +164,4 @@ class ExpoForegroundActionsModule : Module() {
         get() = requireNotNull(this.context.applicationContext) {
             "React Application Context is null"
         }
-
-    fun emitExpirationEvent(identifier: Int, remaining: Double) {
-        sendEvent(ON_EXPIRATION_EVENT, mapOf(
-            "identifier" to identifier,
-            "remaining" to remaining
-        ))
-    }
 }
