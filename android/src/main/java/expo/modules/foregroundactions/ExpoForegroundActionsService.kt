@@ -17,6 +17,9 @@ import com.facebook.react.bridge.Arguments
 import com.facebook.react.jstasks.HeadlessJsTaskConfig
 import com.facebook.react.ReactApplication
 import expo.modules.core.ModulesProvider
+import expo.modules.kotlin.AppContext
+import com.facebook.react.ReactContext
+import com.facebook.react.modules.core.DeviceEventManagerModule
 
 class ExpoForegroundActionsService : HeadlessJsTaskService() {
     companion object {
@@ -55,21 +58,21 @@ class ExpoForegroundActionsService : HeadlessJsTaskService() {
 
     private fun sendExpirationEvent(notificationId: Int) {
         try {
-            val reactApplication = applicationContext as ReactApplication
-            val reactContext = reactApplication.reactNativeHost.reactInstanceManager.currentReactContext
-                ?: return // Return if no React context
+            val eventEmitter = applicationContext
+                .getSystemService("com.facebook.react.ReactContext".toServiceId())
+                ?.let { it as ReactContext }
+                ?.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter::class.java)
 
-            // Get the module through Expo's ModulesProvider
-            val modulesProvider = reactContext.getNativeModule(expo.modules.core.ModulesProvider::class.java)
-                ?: return
-
-            val module = modulesProvider.getModule(ExpoForegroundActionsModule::class.java)
-            module?.emitExpirationEvent(notificationId, 0.0)
-
+            eventEmitter?.emit(ON_EXPIRATION_EVENT, Arguments.createMap().apply {
+                putInt("identifier", notificationId)
+                putDouble("remaining", 0.0)
+            })
         } catch (e: Exception) {
             println("Failed to emit expiration event: ${e.message}")
         }
     }
+
+    private fun String.toServiceId() = this.replace('.', '_').uppercase()
 
     override fun onDestroy() {
         // Send event before calling super.onDestroy(), similar to iOS timing
