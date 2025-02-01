@@ -15,6 +15,15 @@ import androidx.core.app.NotificationCompat
 import com.facebook.react.HeadlessJsTaskService
 import com.facebook.react.bridge.Arguments
 import com.facebook.react.jstasks.HeadlessJsTaskConfig
+import expo.modules.kotlin.AppContext
+import expo.modules.kotlin.ModuleHolder
+import expo.modules.kotlin.modules.Module
+import expo.modules.kotlin.Promise
+import expo.modules.kotlin.exception.CodedException
+import com.facebook.react.ReactApplication
+import com.facebook.react.bridge.WritableMap
+import com.facebook.react.bridge.WritableNativeMap
+import com.facebook.react.modules.core.DeviceEventManagerModule
 
 
 class ExpoForegroundActionsService : HeadlessJsTaskService() {
@@ -52,22 +61,47 @@ class ExpoForegroundActionsService : HeadlessJsTaskService() {
         }
     }
 
+    private fun sendExpirationEvent(notificationId: Int) {
+        try {
+            val reactApplication = applicationContext as ReactApplication
+            val reactContext = reactApplication.reactNativeHost.reactInstanceManager.currentReactContext
+
+            // Get module through the module registry
+            val appContext = AppContext(reactContext)
+            val module = appContext.moduleRegistry.getModule(ExpoForegroundActionsModule::class.java)
+
+            module?.emitExpirationEvent(notificationId, 0.0)
+        } catch (e: Exception) {
+            println("Failed to emit expiration event: ${e.message}")
+        }
+    }
+
+    override fun onDestroy() {
+        // Send event before calling super.onDestroy(), similar to iOS timing
+        val notificationId = extras?.getInt("notificationId")
+        if (notificationId != null) {
+            sendExpirationEvent(notificationId)
+        }
+        super.onDestroy()
+    }
+
+    // Cache extras from onStartCommand
+    private var extras: Bundle? = null
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        val extras: Bundle? = intent?.extras
-        requireNotNull(extras) { "Extras cannot be null" }
+        extras = intent?.extras  // Store extras for later use
+        val localExtras = extras
+        requireNotNull(localExtras) { "Extras cannot be null" }
 
-
-        val notificationTitle: String = extras.getString("notificationTitle")!!;
-        val notificationDesc: String = extras.getString("notificationDesc")!!;
-        val notificationColor: Int = Color.parseColor(extras.getString("notificationColor"))
-        val notificationIconInt: Int = extras.getInt("notificationIconInt");
-        val notificationProgress: Int = extras.getInt("notificationProgress");
-        val notificationMaxProgress: Int = extras.getInt("notificationMaxProgress");
-        val notificationIndeterminate: Boolean = extras.getBoolean("notificationIndeterminate");
-        val notificationId: Int = extras.getInt("notificationId");
-        val linkingURI: String = extras.getString("linkingURI")!!;
-
+        val notificationTitle: String = localExtras.getString("notificationTitle")!!;
+        val notificationDesc: String = localExtras.getString("notificationDesc")!!;
+        val notificationColor: Int = Color.parseColor(localExtras.getString("notificationColor"))
+        val notificationIconInt: Int = localExtras.getInt("notificationIconInt");
+        val notificationProgress: Int = localExtras.getInt("notificationProgress");
+        val notificationMaxProgress: Int = localExtras.getInt("notificationMaxProgress");
+        val notificationIndeterminate: Boolean = localExtras.getBoolean("notificationIndeterminate");
+        val notificationId: Int = localExtras.getInt("notificationId");
+        val linkingURI: String = localExtras.getString("linkingURI")!!;
 
         println("notificationIconInt");
         println(notificationIconInt);
