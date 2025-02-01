@@ -56,31 +56,23 @@ class ExpoForegroundActionsService : HeadlessJsTaskService() {
         }
     }
 
+    private val reactContext: ReactContext?
+        get() = (applicationContext as? ReactApplication)
+            ?.reactNativeHost
+            ?.reactInstanceManager
+            ?.currentReactContext
+
     private fun sendExpirationEvent(notificationId: Int) {
         try {
-            val eventEmitter = applicationContext
-                .getSystemService("com.facebook.react.ReactContext".toServiceId())
-                ?.let { it as ReactContext }
+            reactContext
                 ?.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter::class.java)
-
-            eventEmitter?.emit(ON_EXPIRATION_EVENT, Arguments.createMap().apply {
-                putInt("identifier", notificationId)
-                putDouble("remaining", 0.0)
-            })
+                ?.emit(ON_EXPIRATION_EVENT, Arguments.createMap().apply {
+                    putInt("identifier", notificationId)
+                    putDouble("remaining", 0.0)
+                })
         } catch (e: Exception) {
             println("Failed to emit expiration event: ${e.message}")
         }
-    }
-
-    private fun String.toServiceId() = this.replace('.', '_').uppercase()
-
-    override fun onDestroy() {
-        // Send event before calling super.onDestroy(), similar to iOS timing
-        val notificationId = extras?.getInt("notificationId")
-        if (notificationId != null) {
-            sendExpirationEvent(notificationId)
-        }
-        super.onDestroy()
     }
 
     // Cache extras from onStartCommand
@@ -152,5 +144,14 @@ class ExpoForegroundActionsService : HeadlessJsTaskService() {
                     // Default is false
             )
         }
+    }
+
+    override fun onDestroy() {
+        // Send event before calling super.onDestroy(), similar to iOS timing
+        val notificationId = extras?.getInt("notificationId")
+        if (notificationId != null) {
+            sendExpirationEvent(notificationId)
+        }
+        super.onDestroy()
     }
 }
