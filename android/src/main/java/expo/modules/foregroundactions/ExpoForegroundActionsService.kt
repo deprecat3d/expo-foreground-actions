@@ -11,16 +11,11 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.IBinder
+import android.os.ResultReceiver
 import androidx.core.app.NotificationCompat
 import com.facebook.react.HeadlessJsTaskService
 import com.facebook.react.bridge.Arguments
 import com.facebook.react.jstasks.HeadlessJsTaskConfig
-import com.facebook.react.ReactApplication
-import expo.modules.core.ModulesProvider
-import expo.modules.kotlin.AppContext
-import com.facebook.react.ReactContext
-import com.facebook.react.modules.core.DeviceEventManagerModule
-import android.os.ResultReceiver
 
 class ExpoForegroundActionsService : HeadlessJsTaskService() {
     companion object {
