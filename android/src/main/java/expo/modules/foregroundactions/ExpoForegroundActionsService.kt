@@ -20,10 +20,14 @@ import expo.modules.core.ModulesProvider
 import expo.modules.kotlin.AppContext
 import com.facebook.react.ReactContext
 import com.facebook.react.modules.core.DeviceEventManagerModule
+import android.os.ResultReceiver
 
 class ExpoForegroundActionsService : HeadlessJsTaskService() {
     companion object {
         private const val CHANNEL_ID = "ExpoForegroundActionChannel"
+        private const val RECEIVER_KEY = "receiver"
+        private const val NOTIFICATION_ID_KEY = "notificationId"
+        private const val RESULT_CODE_OK = 0
         fun buildNotification(
                 context: Context,
                 notificationTitle: String,
@@ -53,25 +57,6 @@ class ExpoForegroundActionsService : HeadlessJsTaskService() {
                     .setPriority(NotificationCompat.PRIORITY_MIN)
                     .setColor(notificationColor)
             return builder.build()
-        }
-    }
-
-    private val reactContext: ReactContext?
-        get() = (applicationContext as? ReactApplication)
-            ?.reactNativeHost
-            ?.reactInstanceManager
-            ?.currentReactContext
-
-    private fun sendExpirationEvent(notificationId: Int) {
-        try {
-            reactContext
-                ?.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter::class.java)
-                ?.emit(ON_EXPIRATION_EVENT, Arguments.createMap().apply {
-                    putInt("identifier", notificationId)
-                    putDouble("remaining", 0.0)
-                })
-        } catch (e: Exception) {
-            println("Failed to emit expiration event: ${e.message}")
         }
     }
 
@@ -147,10 +132,16 @@ class ExpoForegroundActionsService : HeadlessJsTaskService() {
     }
 
     override fun onDestroy() {
-        // Send event before calling super.onDestroy(), similar to iOS timing
+        // Get the notification ID and receiver
         val notificationId = extras?.getInt("notificationId")
-        if (notificationId != null) {
-            sendExpirationEvent(notificationId)
+        val receiver = extras?.get(RECEIVER_KEY) as? ResultReceiver
+
+        if (notificationId != null && receiver != null) {
+            // Send result back to module
+            val resultData = Bundle().apply {
+                putInt(NOTIFICATION_ID_KEY, notificationId)
+            }
+            receiver.send(RESULT_CODE_OK, resultData)
         }
         super.onDestroy()
     }
