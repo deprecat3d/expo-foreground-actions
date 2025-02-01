@@ -33,4 +33,7 @@ class ExpoForegroundOptions : Record {
 
     @Field
     val linkingURI: String = ""
+
+    @Field
+    val serviceType: String = "dataSync"
 }
