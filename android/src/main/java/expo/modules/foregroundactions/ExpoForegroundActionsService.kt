@@ -16,6 +16,7 @@ import androidx.core.app.NotificationCompat
 import com.facebook.react.HeadlessJsTaskService
 import com.facebook.react.bridge.Arguments
 import com.facebook.react.jstasks.HeadlessJsTaskConfig
+import android.app.ServiceInfo
 
 class ExpoForegroundActionsService : HeadlessJsTaskService() {
     companion object {
@@ -23,6 +24,18 @@ class ExpoForegroundActionsService : HeadlessJsTaskService() {
         private const val RECEIVER_KEY = "receiver"
         private const val NOTIFICATION_ID_KEY = "notificationId"
         private const val RESULT_CODE_OK = 0
+
+        fun getServiceType(typeString: String?): Int {
+            return when (typeString) {
+                "mediaPlayback" -> ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK
+                "location" -> ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION
+                "camera" -> ServiceInfo.FOREGROUND_SERVICE_TYPE_CAMERA
+                "microphone" -> ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE
+                "phoneCall" -> ServiceInfo.FOREGROUND_SERVICE_TYPE_PHONE_CALL
+                else -> ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
+            }
+        }
+
         fun buildNotification(
                 context: Context,
                 notificationTitle: String,
@@ -94,7 +107,12 @@ class ExpoForegroundActionsService : HeadlessJsTaskService() {
         )
         println("Starting foreground")
 
-        startForeground(notificationId, notification)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            val serviceType = getServiceType(localExtras.getString("serviceType"))
+            startForeground(notificationId, notification, serviceType)
+        } else {
+            startForeground(notificationId, notification)
+        }
         println("After foreground")
         return super.onStartCommand(intent, flags, startId)
     }
