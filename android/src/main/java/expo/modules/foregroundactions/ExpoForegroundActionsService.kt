@@ -121,14 +121,27 @@ class ExpoForegroundActionsService : HeadlessJsTaskService() {
     }
 
     override fun getTaskConfig(intent: Intent): HeadlessJsTaskConfig? {
-        return intent.extras?.let {
-            // Create a new Bundle excluding the ResultReceiver
-            val taskData = Bundle(it).apply {
-                remove(RECEIVER_KEY) // Remove the ResultReceiver from the Bundle
+        println("getTaskConfig called")
+        return intent.extras?.let { originalExtras ->
+            // Create a new Bundle with only the supported data
+            val taskData = Bundle().apply {
+                // Copy only the necessary data
+                putString("headlessTaskName", originalExtras.getString("headlessTaskName"))
+                putString("notificationTitle", originalExtras.getString("notificationTitle"))
+                putString("notificationDesc", originalExtras.getString("notificationDesc"))
+                putString("notificationColor", originalExtras.getString("notificationColor"))
+                putInt("notificationIconInt", originalExtras.getInt("notificationIconInt"))
+                putInt("notificationProgress", originalExtras.getInt("notificationProgress"))
+                putInt("notificationMaxProgress", originalExtras.getInt("notificationMaxProgress"))
+                putBoolean("notificationIndeterminate", originalExtras.getBoolean("notificationIndeterminate"))
+                putString("linkingURI", originalExtras.getString("linkingURI"))
+                putInt("notificationId", originalExtras.getInt("notificationId"))
+                // Exclude the ResultReceiver
             }
+
             HeadlessJsTaskConfig(
-                it.getString("headlessTaskName")!!,
-                Arguments.fromBundle(taskData), // Use the modified Bundle
+                originalExtras.getString("headlessTaskName")!!,
+                Arguments.fromBundle(taskData), // Use the new Bundle
                 0, // timeout for the task
                 true // optional: defines whether or not the task is allowed in foreground.
                 // Default is false
