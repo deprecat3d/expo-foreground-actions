@@ -17,7 +17,6 @@ import androidx.core.app.NotificationCompat
 import com.facebook.react.HeadlessJsTaskService
 import com.facebook.react.bridge.Arguments
 import com.facebook.react.jstasks.HeadlessJsTaskConfig
-import androidx.annotation.RequiresApi
 
 class ExpoForegroundActionsService : HeadlessJsTaskService() {
     companion object {
@@ -98,7 +97,7 @@ class ExpoForegroundActionsService : HeadlessJsTaskService() {
         println("Starting foreground")
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            startForeground(notificationId, notification, getForegroundServiceType())
+            startForeground(notificationId, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC)
         } else {
             startForeground(notificationId, notification)
         }
@@ -148,10 +147,5 @@ class ExpoForegroundActionsService : HeadlessJsTaskService() {
 
         stopSelf()  // Always stop the service
         super.onDestroy()
-    }
-
-    @RequiresApi(Build.VERSION_CODES.Q)
-    override fun getForegroundServiceType(): Int {
-        return ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
     }
 }
