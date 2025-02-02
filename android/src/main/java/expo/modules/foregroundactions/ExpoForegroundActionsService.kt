@@ -144,6 +144,8 @@ class ExpoForegroundActionsService : HeadlessJsTaskService() {
             }
             receiver.send(RESULT_CODE_OK, resultData)
         }
+
+        stopSelf()  // Always stop the service
         super.onDestroy()
     }
 }
