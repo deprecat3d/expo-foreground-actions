@@ -56,7 +56,6 @@ class ExpoForegroundActionsModule : Module() {
                 intent.putExtra("notificationMaxProgress", options.notificationMaxProgress)
                 intent.putExtra("notificationIndeterminate", options.notificationIndeterminate)
                 intent.putExtra("linkingURI", options.linkingURI)
-                intent.putExtra("serviceType", options.serviceType)
 
                 // Add ResultReceiver
                 intent.putExtra(RECEIVER_KEY, object : ResultReceiver(Handler(Looper.getMainLooper())) {
