@@ -16,6 +16,7 @@ import expo.modules.kotlin.exception.CodedException
 import expo.modules.kotlin.exception.toCodedException
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
+import android.util.Log
 
 
 const val ON_EXPIRATION_EVENT = "onExpirationEvent"
@@ -26,6 +27,7 @@ class ExpoForegroundActionsModule : Module() {
         private const val NOTIFICATION_ID_KEY = "notificationId"
         private const val RESULT_CODE_OK = 0
         private const val BASE_ACTION = "expo.modules.foregroundactions.ACTION_FOREGROUND_SERVICE"
+        private const val LOG_TAG = "ExpoForegroundActions"
     }
 
     private val intentMap: MutableMap<Int, Intent> = mutableMapOf()
@@ -46,10 +48,14 @@ class ExpoForegroundActionsModule : Module() {
 
         AsyncFunction("startForegroundAction") { options: ExpoForegroundOptions, promise: Promise ->
             try {
-                // Create intent with unique action
+                currentReferenceId++
+
                 val intent = Intent(context, ExpoForegroundActionsService::class.java).apply {
                     action = "$BASE_ACTION.$currentReferenceId"
                 }
+
+                // Add all the extras
+                intent.putExtra("notificationId", currentReferenceId)  // Use this as the identifier
                 intent.putExtra("headlessTaskName", options.headlessTaskName)
                 intent.putExtra("notificationTitle", options.notificationTitle)
                 intent.putExtra("notificationDesc", options.notificationDesc)
@@ -74,20 +80,17 @@ class ExpoForegroundActionsModule : Module() {
                     }
                 })
 
-                currentReferenceId++
-                intentMap[currentReferenceId] = intent
-                intent.putExtra("notificationId", currentReferenceId)
+                // Store the intent with its unique identifier
+                intentMap[currentReferenceId] = intent.clone() as Intent
+
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                     context.startForegroundService(intent)
                 } else {
                     context.startService(intent)
                 }
                 promise.resolve(currentReferenceId)
-
             } catch (e: Exception) {
-                println(e.message);
-
-                // Handle other exceptions
+                Log.e(LOG_TAG, "Error starting foreground action: ${e.message}")
                 promise.reject(e.toCodedException())
             }
         }
@@ -96,20 +99,20 @@ class ExpoForegroundActionsModule : Module() {
             try {
                 val intent = intentMap[identifier]
                 if (intent != null) {
-                    println("Attempting to stop service with action: ${intent.action}")
+                    Log.d(LOG_TAG, "Attempting to stop service with action: ${intent.action}")
                     val stopped = context.stopService(intent)
                     if (stopped) {
                         intentMap.remove(identifier)
-                        println("Successfully stopped task with identifier $identifier and action ${intent.action}")
+                        Log.d(LOG_TAG, "Successfully stopped task with identifier $identifier")
                     } else {
-                        println("Failed to stop task with identifier $identifier and action ${intent.action}")
+                        Log.e(LOG_TAG, "Failed to stop task with identifier $identifier")
                     }
                 } else {
-                    println("Task with identifier $identifier does not exist or has already been ended")
+                    Log.w(LOG_TAG, "Task with identifier $identifier does not exist or has already been ended")
                 }
                 promise.resolve(null)
             } catch (e: Exception) {
-                println("Error stopping task with identifier $identifier: ${e.message}")
+                Log.e(LOG_TAG, "Error stopping task with identifier $identifier: ${e.message}")
                 promise.reject(e.toCodedException())
             }
         }
@@ -132,8 +135,7 @@ class ExpoForegroundActionsModule : Module() {
                 notificationManager.notify(identifier, notification)
                 promise.resolve(null)
             } catch (e: Exception) {
-                println(e.message);
-                // Handle other exceptions
+                Log.e(LOG_TAG, "Error updating foreground action: ${e.message}")
                 promise.reject(e.toCodedException())
             }
         }
@@ -145,15 +147,15 @@ class ExpoForegroundActionsModule : Module() {
                     val (id, intent) = iterator.next()
                     val stopped = context.stopService(intent)
                     if (stopped) {
-                        println("Successfully stopped task with identifier $id")
+                        Log.d(LOG_TAG, "Successfully stopped task with identifier $id")
                         iterator.remove() // Remove the entry from the map
                     } else {
-                        println("Failed to stop task with identifier $id")
+                        Log.e(LOG_TAG, "Failed to stop task with identifier $id")
                     }
                 }
                 promise.resolve(null)
             } catch (e: Exception) {
-                println("Error force stopping all tasks: ${e.message}")
+                Log.e(LOG_TAG, "Error force stopping all tasks: ${e.message}")
                 promise.reject(e.toCodedException())
             }
         }
