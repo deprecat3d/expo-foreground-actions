@@ -122,12 +122,16 @@ class ExpoForegroundActionsService : HeadlessJsTaskService() {
 
     override fun getTaskConfig(intent: Intent): HeadlessJsTaskConfig? {
         return intent.extras?.let {
+            // Create a new Bundle excluding the ResultReceiver
+            val taskData = Bundle(it).apply {
+                remove(RECEIVER_KEY) // Remove the ResultReceiver from the Bundle
+            }
             HeadlessJsTaskConfig(
-                    intent.extras?.getString("headlessTaskName")!!,
-                    Arguments.fromBundle(it),
-                    0, // timeout for the task
-                    true // optional: defines whether or not the task is allowed in foreground.
-                    // Default is false
+                it.getString("headlessTaskName")!!,
+                Arguments.fromBundle(taskData), // Use the modified Bundle
+                0, // timeout for the task
+                true // optional: defines whether or not the task is allowed in foreground.
+                // Default is false
             )
         }
     }
