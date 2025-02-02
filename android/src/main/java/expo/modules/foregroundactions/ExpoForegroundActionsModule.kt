@@ -135,15 +135,17 @@ class ExpoForegroundActionsModule : Module() {
 
         AsyncFunction("forceStopAllForegroundActions") { promise: Promise ->
             try {
-                for ((id, intent) in intentMap) {
+                val iterator = intentMap.iterator()
+                while (iterator.hasNext()) {
+                    val (id, intent) = iterator.next()
                     val stopped = context.stopService(intent)
                     if (stopped) {
                         println("Successfully stopped task with identifier $id")
+                        iterator.remove() // Remove the entry from the map
                     } else {
                         println("Failed to stop task with identifier $id")
                     }
                 }
-                intentMap.clear()
                 promise.resolve(null)
             } catch (e: Exception) {
                 println(e.message)
