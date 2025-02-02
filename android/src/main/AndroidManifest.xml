@@ -2,9 +2,18 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
 
     <application>
+        <!--
+          Uses 'dataSync' type which is ideal for:
+          - File uploads/downloads
+          - Data synchronization
+          - Background processing
+
+          Note: For other background tasks like location tracking or media playback,
+          use dedicated Expo packages (expo-location, expo-av) instead.
+        -->
         <service
             android:name=".ExpoForegroundActionsService"
-            android:foregroundServiceType="dataSync|mediaPlayback|location|camera|microphone|phoneCall"/>
+            android:foregroundServiceType="dataSync"/>
     </application>
 </manifest>
 <!--<manifest xmlns:android="http://schemas.android.com/apk/res/android">-->
