@@ -6,6 +6,7 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.content.pm.ServiceInfo
 import android.graphics.Color
 import android.net.Uri
 import android.os.Build
@@ -16,7 +17,6 @@ import androidx.core.app.NotificationCompat
 import com.facebook.react.HeadlessJsTaskService
 import com.facebook.react.bridge.Arguments
 import com.facebook.react.jstasks.HeadlessJsTaskConfig
-import android.app.ServiceInfo
 
 class ExpoForegroundActionsService : HeadlessJsTaskService() {
     companion object {
