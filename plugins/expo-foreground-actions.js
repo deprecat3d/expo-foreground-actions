@@ -6,9 +6,23 @@ module.exports = function withBackgroundActions(config) {
     const application = getMainApplicationOrThrow(config.modResults);
     const service = application.service ? application.service : [];
 
+    // Create new permissions array
+    const permissions = [
+      'android.permission.FOREGROUND_SERVICE',
+      'android.permission.FOREGROUND_SERVICE_DATA_SYNC'
+    ].map(permission => ({
+      $: {
+        "android:name": permission
+      }
+    }));
+
     config.modResults = {
       manifest: {
         ...config.modResults.manifest,
+        'uses-permission': [
+          ...(config.modResults.manifest['uses-permission'] || []),
+          ...permissions
+        ],
         application: [
           {
             ...application,
@@ -16,8 +30,9 @@ module.exports = function withBackgroundActions(config) {
               ...service,
               {
                 $: {
-                  "android:name":
-                    "expo.modules.foregroundactions.ExpoForegroundActionsService",
+                  "android:name": "expo.modules.foregroundactions.ExpoForegroundActionsService",
+                  "android:exported": "false",
+                  "android:foregroundServiceType": "dataSync",
                 },
               },
             ],
