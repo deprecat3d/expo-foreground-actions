@@ -25,6 +25,7 @@ class ExpoForegroundActionsModule : Module() {
         private const val RECEIVER_KEY = "receiver"
         private const val NOTIFICATION_ID_KEY = "notificationId"
         private const val RESULT_CODE_OK = 0
+        private const val BASE_ACTION = "expo.modules.foregroundactions.ACTION_FOREGROUND_SERVICE"
     }
 
     private val intentMap: MutableMap<Int, Intent> = mutableMapOf()
@@ -45,7 +46,10 @@ class ExpoForegroundActionsModule : Module() {
 
         AsyncFunction("startForegroundAction") { options: ExpoForegroundOptions, promise: Promise ->
             try {
-                val intent = Intent(context, ExpoForegroundActionsService::class.java)
+                // Create intent with unique action
+                val intent = Intent(context, ExpoForegroundActionsService::class.java).apply {
+                    action = "$BASE_ACTION.$currentReferenceId"
+                }
                 intent.putExtra("headlessTaskName", options.headlessTaskName)
                 intent.putExtra("notificationTitle", options.notificationTitle)
                 intent.putExtra("notificationDesc", options.notificationDesc)
@@ -92,12 +96,13 @@ class ExpoForegroundActionsModule : Module() {
             try {
                 val intent = intentMap[identifier]
                 if (intent != null) {
+                    println("Attempting to stop service with action: ${intent.action}")
                     val stopped = context.stopService(intent)
                     if (stopped) {
                         intentMap.remove(identifier)
-                        println("Successfully stopped task with identifier $identifier")
+                        println("Successfully stopped task with identifier $identifier and action ${intent.action}")
                     } else {
-                        println("Failed to stop task with identifier $identifier")
+                        println("Failed to stop task with identifier $identifier and action ${intent.action}")
                     }
                 } else {
                     println("Task with identifier $identifier does not exist or has already been ended")
