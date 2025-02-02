@@ -1,9 +1,1 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="expo.modules.foregroundactions">
-    <application>
-        <service
-            android:name=".ExpoForegroundActionsService"
-            android:exported="false"
-            android:foregroundServiceType="dataSync" />
-    </application>
-</manifest>
+<manifest></manifest>
