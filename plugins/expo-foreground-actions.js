@@ -16,6 +16,18 @@ module.exports = function withBackgroundActions(config) {
       }
     }));
 
+    // Create intent filter for the service
+    const intentFilter = {
+      $: {},
+      action: [
+        {
+          $: {
+            "android:name": "expo.modules.foregroundactions.ACTION_FOREGROUND_SERVICE.*"
+          }
+        }
+      ]
+    };
+
     config.modResults = {
       manifest: {
         ...config.modResults.manifest,
@@ -34,6 +46,7 @@ module.exports = function withBackgroundActions(config) {
                   "android:exported": "false",
                   "android:foregroundServiceType": "dataSync",
                 },
+                'intent-filter': [intentFilter]
               },
             ],
           },
