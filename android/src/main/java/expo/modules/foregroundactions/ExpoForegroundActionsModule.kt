@@ -104,7 +104,7 @@ class ExpoForegroundActionsModule : Module() {
                 }
                 promise.resolve(null)
             } catch (e: Exception) {
-                println(e.message)
+                println("Error stopping task with identifier $identifier: ${e.message}")
                 promise.reject(e.toCodedException())
             }
         }
@@ -148,7 +148,7 @@ class ExpoForegroundActionsModule : Module() {
                 }
                 promise.resolve(null)
             } catch (e: Exception) {
-                println(e.message)
+                println("Error force stopping all tasks: ${e.message}")
                 promise.reject(e.toCodedException())
             }
         }
