@@ -65,6 +65,9 @@ class ExpoForegroundActionsService : HeadlessJsTaskService() {
         val localExtras = extras
         requireNotNull(localExtras) { "Extras cannot be null" }
 
+        // The action will be unique for each service instance
+        println("Service started with action: ${intent?.action}")
+
         val notificationTitle: String = localExtras.getString("notificationTitle")!!;
         val notificationDesc: String = localExtras.getString("notificationDesc")!!;
         val notificationColor: Int = Color.parseColor(localExtras.getString("notificationColor"))
