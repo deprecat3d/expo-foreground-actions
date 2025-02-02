@@ -1,4 +1,5 @@
-<manifest package="expo.modules.foregroundactions">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="expo.modules.foregroundactions">
     <application>
         <service
             android:name=".ExpoForegroundActionsService"
