@@ -90,22 +90,23 @@ class ExpoForegroundActionsModule : Module() {
 
         AsyncFunction("stopForegroundAction") { identifier: Int, promise: Promise ->
             try {
-                println(identifier);
-                println(intentMap);
                 val intent = intentMap[identifier]
-                if (intent !== null) {
-                    context.stopService(intent)
-                    intentMap.remove(identifier)
+                if (intent != null) {
+                    val stopped = context.stopService(intent)
+                    if (stopped) {
+                        intentMap.remove(identifier)
+                        println("Successfully stopped task with identifier $identifier")
+                    } else {
+                        println("Failed to stop task with identifier $identifier")
+                    }
                 } else {
-                    println("Background task with identifier $identifier does not exist or has already been ended");
-
+                    println("Task with identifier $identifier does not exist or has already been ended")
                 }
+                promise.resolve(null)
             } catch (e: Exception) {
-                println(e.message);
-                // Handle other exceptions
+                println(e.message)
                 promise.reject(e.toCodedException())
             }
-            promise.resolve(null)
         }
 
         AsyncFunction("updateForegroundedAction") { identifier: Int, options: ExpoForegroundOptions, promise: Promise ->
@@ -134,18 +135,18 @@ class ExpoForegroundActionsModule : Module() {
 
         AsyncFunction("forceStopAllForegroundActions") { promise: Promise ->
             try {
-                if (intentMap.isEmpty()) {
-                    println("No intents to stop.")
-                } else {
-                    for ((_, intent) in intentMap) {
-                        context.stopService(intent)
+                for ((id, intent) in intentMap) {
+                    val stopped = context.stopService(intent)
+                    if (stopped) {
+                        println("Successfully stopped task with identifier $id")
+                    } else {
+                        println("Failed to stop task with identifier $id")
                     }
-                    intentMap.clear()
                 }
+                intentMap.clear()
                 promise.resolve(null)
             } catch (e: Exception) {
                 println(e.message)
-                // Handle other exceptions
                 promise.reject(e.toCodedException())
             }
         }
