@@ -44,7 +44,7 @@ class ExpoForegroundActionsService : HeadlessJsTaskService() {
             } else {
                 Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER)
             }
-            val contentIntent: PendingIntent = PendingIntent.getActivity(context, 0, notificationIntent, PendingIntent.FLAG_IMMUTABLE);
+            val contentIntent: PendingIntent = PendingIntent.getActivity(context, 0, notificationIntent, PendingIntent.FLAG_IMMUTABLE)
             val builder = NotificationCompat.Builder(context, CHANNEL_ID)
                     .setContentTitle(notificationTitle)
                     .setContentText(notificationDesc)
