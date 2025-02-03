@@ -111,7 +111,7 @@ const runIos = async (action: (identifier: number) => Promise<void>, settings: S
   } catch (e) {
     throw e;
   } finally {
-    await stopForegroundAction(identifier);
+    await ExpoForegroundActionsModule.stopForegroundAction(identifier, true);  // automatic stop
   }
 };
 
