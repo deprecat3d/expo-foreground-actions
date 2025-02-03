@@ -163,6 +163,16 @@ class ExpoForegroundActionsModule : Module() {
             val identifiers = intentMap.keys.toTypedArray()
             promise.resolve(identifiers)
         }
+
+        AsyncFunction("isServiceRunning") { identifier: Int, promise: Promise ->
+            try {
+                val intent = intentMap[identifier]
+                promise.resolve(intent != null)
+            } catch (e: Exception) {
+                AndroidLog.e(LOG_TAG, "Error checking service status: ${e.message}")
+                promise.reject(e.toCodedException())
+            }
+        }
     }
 
     private val context
