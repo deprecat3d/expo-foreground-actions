@@ -162,6 +162,10 @@ export function addExpirationListener(
   return emitter.addListener("onExpirationEvent", listener);
 }
 
+/**
+ * On iOS, the system only provides one global background execution time window for the entire app.
+ * So the `id` parameter is not used on iOS, though you should provide it anyway as it is required on Android.
+*/
 export const getServiceStatus = async (id: number): Promise<ServiceStatus> => {
   if (Platform.OS === "ios") {
     const remaining = await ExpoForegroundActionsModule.getBackgroundTimeRemaining();
