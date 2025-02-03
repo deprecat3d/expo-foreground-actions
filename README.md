@@ -242,13 +242,29 @@ export const getRanTaskCount = () => ranTaskCount;
 
 - Retrieves the count of tasks that have run.
 
-#### `getBackgroundTimeRemaining`
+#### `getServiceStatus`
 
 ```typescript
-export const getBackgroundTimeRemaining = async (): Promise<number>;
+export const getServiceStatus = async (id: number): Promise<ServiceStatus>;
 ```
 
-- Retrieves the remaining background execution time on iOS.
+- Retrieves the service status for a given task, which includes a flag for whether the service is running and, on iOS, the remaining background execution time.
+
+#### `addExpirationListener`
+
+```typescript
+export function addExpirationListener(
+  listener: (event: ExpireEventPayload) => void
+): Subscription;
+
+// Example:
+const unsubscribe = addExpirationListener((event) => {
+  console.log("Expiration event received.", event);
+});
+unsubscribe?.remove();
+```
+
+- Adds an event listener for when the service expires or is manually stopped.
 
 ### 🤖 Interfaces
 
@@ -259,6 +275,16 @@ export type ExpireEventPayload = {
   remaining: number;
   identifier: number;
 };
+```
+
+#### `ServiceStatus`
+
+```typescript
+export type ServiceStatus = {
+  isRunning: boolean;
+  /** Only available on iOS */
+  remaining?: number;
+}
 ```
 
 - `remaining`: The remaining time in seconds before the foreground action expires.
