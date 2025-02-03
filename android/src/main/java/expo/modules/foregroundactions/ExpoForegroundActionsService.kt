@@ -150,19 +150,20 @@ class ExpoForegroundActionsService : HeadlessJsTaskService() {
     }
 
     override fun onDestroy() {
-        // Get the notification ID and receiver
         val notificationId = extras?.getInt("notificationId")
-        val receiver = extras?.get(RECEIVER_KEY) as? ResultReceiver
+        AndroidLog.d(LOG_TAG, "Service onDestroy called for ID: $notificationId")
 
+        val receiver = extras?.get(RECEIVER_KEY) as? ResultReceiver
         if (notificationId != null && receiver != null) {
-            // Send result back to module
+            AndroidLog.d(LOG_TAG, "Sending result back to module for ID: $notificationId")
             val resultData = Bundle().apply {
                 putInt(NOTIFICATION_ID_KEY, notificationId)
             }
             receiver.send(RESULT_CODE_OK, resultData)
         }
 
-        stopSelf()  // Always stop the service
+        stopSelf()
+        AndroidLog.d(LOG_TAG, "Service instance destroyed for ID: $notificationId")
         super.onDestroy()
     }
 }
