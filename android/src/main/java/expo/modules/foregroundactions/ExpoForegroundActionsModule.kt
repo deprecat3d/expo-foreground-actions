@@ -105,21 +105,23 @@ class ExpoForegroundActionsModule : Module() {
                 AndroidLog.d(LOG_TAG, "Current intents in map: ${intentMap.keys.joinToString()}")
                 val serviceInfo = intentMap[identifier]
                 if (serviceInfo != null) {
-                    // Create a new intent with the same action
-                    val stopIntent = Intent(context, ExpoForegroundActionsService::class.java).apply {
-                        action = serviceInfo.intent.action
-                        // Copy all extras
-                        putExtras(serviceInfo.intent.extras ?: Bundle())
+                    // First, cancel the notification
+                    val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+                    notificationManager.cancel(identifier)
+                    AndroidLog.d(LOG_TAG, "Canceled notification for ID $identifier (${if (isAutomatic) "automatic" else "manual"})")
+
+                    // Remove from our map
+                    intentMap.remove(identifier)
+
+                    // If this was the last notification, stop the service
+                    if (intentMap.isEmpty()) {
+                        AndroidLog.d(LOG_TAG, "No more active notifications, stopping service (${if (isAutomatic) "automatic" else "manual"})")
+                        context.stopService(Intent(context, ExpoForegroundActionsService::class.java))
+                    } else {
+                        AndroidLog.d(LOG_TAG, "Service kept alive with ${intentMap.size} remaining notifications (${if (isAutomatic) "automatic" else "manual"})")
                     }
 
-                    AndroidLog.d(LOG_TAG, "Attempting to stop service with action: ${stopIntent.action} (${if (isAutomatic) "automatic" else "manual"})")
-                    val stopped = context.stopService(stopIntent)
-                    if (stopped) {
-                        intentMap.remove(identifier)
-                        AndroidLog.d(LOG_TAG, "Successfully stopped task with identifier $identifier (${if (isAutomatic) "automatic" else "manual"})")
-                    } else {
-                        AndroidLog.e(LOG_TAG, "Failed to stop task with identifier $identifier (${if (isAutomatic) "automatic" else "manual"})")
-                    }
+                    AndroidLog.d(LOG_TAG, "Successfully stopped task with identifier $identifier (${if (isAutomatic) "automatic" else "manual"})")
                 } else {
                     AndroidLog.w(LOG_TAG, "Task with identifier $identifier does not exist or has already been ended (${if (isAutomatic) "automatic" else "manual"})")
                 }
@@ -155,17 +157,17 @@ class ExpoForegroundActionsModule : Module() {
 
         AsyncFunction("forceStopAllForegroundActions") { promise: Promise ->
             try {
-                val iterator = intentMap.iterator()
-                while (iterator.hasNext()) {
-                    val (id, serviceInfo) = iterator.next()
-                    val stopped = context.stopService(serviceInfo.intent)
-                    if (stopped) {
-                        AndroidLog.d(LOG_TAG, "Successfully stopped task with identifier $id")
-                        iterator.remove() // Remove the entry from the map
-                    } else {
-                        AndroidLog.e(LOG_TAG, "Failed to stop task with identifier $id")
-                    }
+                // Cancel all notifications
+                val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+                intentMap.keys.forEach { id ->
+                    AndroidLog.d(LOG_TAG, "Canceling notification for ID $id")
+                    notificationManager.cancel(id)
                 }
+                intentMap.clear()
+
+                // Stop the service
+                AndroidLog.d(LOG_TAG, "Stopping service")
+                context.stopService(Intent(context, ExpoForegroundActionsService::class.java))
                 promise.resolve(null)
             } catch (e: Exception) {
                 AndroidLog.e(LOG_TAG, "Error force stopping all tasks: ${e.message}")
