@@ -105,14 +105,14 @@ class ExpoForegroundActionsModule : Module() {
                         intentMap.remove(identifier)
                         AndroidLog.d(LOG_TAG, "Successfully stopped task with identifier $identifier (${if (isAutomatic) "automatic" else "manual"})")
                     } else {
-                        AndroidLog.e(LOG_TAG, "Failed to stop task with identifier $identifier")
+                        AndroidLog.e(LOG_TAG, "Failed to stop task with identifier $identifier (${if (isAutomatic) "automatic" else "manual"})")
                     }
                 } else {
-                    AndroidLog.w(LOG_TAG, "Task with identifier $identifier does not exist or has already been ended")
+                    AndroidLog.w(LOG_TAG, "Task with identifier $identifier does not exist or has already been ended (${if (isAutomatic) "automatic" else "manual"})")
                 }
                 promise.resolve(null)
             } catch (e: Exception) {
-                AndroidLog.e(LOG_TAG, "Error stopping task with identifier $identifier: ${e.message}")
+                AndroidLog.e(LOG_TAG, "Error stopping task with identifier $identifier: ${e.message} (${if (isAutomatic) "automatic" else "manual"})")
                 promise.reject(e.toCodedException())
             }
         }
