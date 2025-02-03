@@ -122,19 +122,10 @@ const runAndroid = async (action: (identifier: number) => Promise<void>, options
       try {
         settings?.events?.onIdentifier?.(notificationId);
         await action(notificationId);
-
-        // Check if service is still running before attempting to stop
-        const status = await getServiceStatus(notificationId);
-        if (status.isRunning) {
-          await stopForegroundAction(notificationId);
-        }
+        await ExpoForegroundActionsModule.stopForegroundAction(notificationId, true);  // automatic stop
         resolve();
       } catch (e) {
-        // Even in error case, only stop if still running
-        const status = await getServiceStatus(notificationId);
-        if (status.isRunning) {
-          await stopForegroundAction(notificationId);
-        }
+        await ExpoForegroundActionsModule.stopForegroundAction(notificationId, true);  // automatic stop
         throw e;
       }
     });
@@ -152,7 +143,7 @@ export const updateForegroundedAction = async (id: number, options: AndroidSetti
 
 // noinspection JSUnusedGlobalSymbols
 export const stopForegroundAction = async (id: number): Promise<void> => {
-  await ExpoForegroundActionsModule.stopForegroundAction(id);
+  await ExpoForegroundActionsModule.stopForegroundAction(id, false);  // manual stop
 };
 
 // noinspection JSUnusedGlobalSymbols
