@@ -95,7 +95,7 @@ class ExpoForegroundActionsModule : Module() {
             }
         }
 
-        AsyncFunction("stopForegroundAction") { identifier: Int, isAutomatic: Boolean = false, promise: Promise ->
+        AsyncFunction("stopForegroundAction") { identifier: Int, isAutomatic: Boolean, promise: Promise ->
             try {
                 val intent = intentMap[identifier]
                 if (intent != null) {
