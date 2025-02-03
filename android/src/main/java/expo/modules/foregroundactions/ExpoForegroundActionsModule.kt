@@ -30,7 +30,12 @@ class ExpoForegroundActionsModule : Module() {
         private const val LOG_TAG = "ExpoForegroundActions"
     }
 
-    private val intentMap: MutableMap<Int, Intent> = mutableMapOf()
+    private data class ServiceInfo(
+        val intent: Intent,
+        val startTime: Long = System.currentTimeMillis()
+    )
+
+    private val intentMap: MutableMap<Int, ServiceInfo> = mutableMapOf()
     private var currentReferenceId: Int = 0
 
     // Each module class must implement the definition function. The definition consists of components
@@ -81,7 +86,7 @@ class ExpoForegroundActionsModule : Module() {
                 })
 
                 // Store the intent with its unique identifier
-                intentMap[currentReferenceId] = intent.clone() as Intent
+                intentMap[currentReferenceId] = ServiceInfo(intent.clone() as Intent)
 
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                     context.startForegroundService(intent)
@@ -98,10 +103,17 @@ class ExpoForegroundActionsModule : Module() {
         AsyncFunction("stopForegroundAction") { identifier: Int, isAutomatic: Boolean, promise: Promise ->
             try {
                 AndroidLog.d(LOG_TAG, "Current intents in map: ${intentMap.keys.joinToString()}")
-                val intent = intentMap[identifier]
-                if (intent != null) {
-                    AndroidLog.d(LOG_TAG, "Found intent for ID $identifier with action: ${intent.action}")
-                    val stopped = context.stopService(intent)
+                val serviceInfo = intentMap[identifier]
+                if (serviceInfo != null) {
+                    // Create a new intent with the same action
+                    val stopIntent = Intent(context, ExpoForegroundActionsService::class.java).apply {
+                        action = serviceInfo.intent.action
+                        // Copy all extras
+                        putExtras(serviceInfo.intent.extras ?: Bundle())
+                    }
+
+                    AndroidLog.d(LOG_TAG, "Attempting to stop service with action: ${stopIntent.action} (${if (isAutomatic) "automatic" else "manual"})")
+                    val stopped = context.stopService(stopIntent)
                     if (stopped) {
                         intentMap.remove(identifier)
                         AndroidLog.d(LOG_TAG, "Successfully stopped task with identifier $identifier (${if (isAutomatic) "automatic" else "manual"})")
@@ -145,8 +157,8 @@ class ExpoForegroundActionsModule : Module() {
             try {
                 val iterator = intentMap.iterator()
                 while (iterator.hasNext()) {
-                    val (id, intent) = iterator.next()
-                    val stopped = context.stopService(intent)
+                    val (id, serviceInfo) = iterator.next()
+                    val stopped = context.stopService(serviceInfo.intent)
                     if (stopped) {
                         AndroidLog.d(LOG_TAG, "Successfully stopped task with identifier $id")
                         iterator.remove() // Remove the entry from the map
@@ -167,8 +179,8 @@ class ExpoForegroundActionsModule : Module() {
 
         AsyncFunction("isServiceRunning") { identifier: Int, promise: Promise ->
             try {
-                val intent = intentMap[identifier]
-                promise.resolve(intent != null)
+                val serviceInfo = intentMap[identifier]
+                promise.resolve(serviceInfo != null)
             } catch (e: Exception) {
                 AndroidLog.e(LOG_TAG, "Error checking service status: ${e.message}")
                 promise.reject(e.toCodedException())
