@@ -16,7 +16,7 @@ import androidx.core.app.NotificationCompat
 import com.facebook.react.HeadlessJsTaskService
 import com.facebook.react.bridge.Arguments
 import com.facebook.react.jstasks.HeadlessJsTaskConfig
-import android.util.Log
+import android.util.Log as AndroidLog
 import android.app.PendingIntent
 
 class ExpoForegroundActionsService : HeadlessJsTaskService() {
@@ -68,10 +68,10 @@ class ExpoForegroundActionsService : HeadlessJsTaskService() {
         requireNotNull(localExtras) { "Extras cannot be null" }
 
         val notificationId = localExtras.getInt("notificationId")
-        Log.d(LOG_TAG, "Service started with ID: $notificationId")
+        AndroidLog.d(LOG_TAG, "Service started with ID: $notificationId")
 
         // The action will be unique for each service instance
-        Log.d(LOG_TAG, "Service started with action: ${intent?.action}")
+        AndroidLog.d(LOG_TAG, "Service started with action: ${intent?.action}")
 
         val notificationTitle: String = localExtras.getString("notificationTitle")!!
         val notificationDesc: String = localExtras.getString("notificationDesc")!!
@@ -82,14 +82,14 @@ class ExpoForegroundActionsService : HeadlessJsTaskService() {
         val notificationIndeterminate: Boolean = localExtras.getBoolean("notificationIndeterminate")
         val linkingURI: String = localExtras.getString("linkingURI")!!
 
-        Log.d(LOG_TAG, "notificationIconInt")
-        Log.d(LOG_TAG, notificationIconInt.toString())
-        Log.d(LOG_TAG, "On create door dion")
-        Log.d(LOG_TAG, "onStartCommand")
+        AndroidLog.d(LOG_TAG, "notificationIconInt")
+        AndroidLog.d(LOG_TAG, notificationIconInt.toString())
+        AndroidLog.d(LOG_TAG, "On create door dion")
+        AndroidLog.d(LOG_TAG, "onStartCommand")
         createNotificationChannel() // Necessary creating channel for API 26+
-        Log.d(LOG_TAG, "After createNotificationChannel")
+        AndroidLog.d(LOG_TAG, "After createNotificationChannel")
 
-        Log.d(LOG_TAG, "buildNotification")
+        AndroidLog.d(LOG_TAG, "buildNotification")
         val notification: Notification = buildNotification(
                 this,
                 notificationTitle,
@@ -101,14 +101,14 @@ class ExpoForegroundActionsService : HeadlessJsTaskService() {
                 notificationIndeterminate,
                 linkingURI
         )
-        Log.d(LOG_TAG, "Starting foreground")
+        AndroidLog.d(LOG_TAG, "Starting foreground")
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             startForeground(notificationId, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC)
         } else {
             startForeground(notificationId, notification)
         }
-        Log.d(LOG_TAG, "After foreground")
+        AndroidLog.d(LOG_TAG, "After foreground")
         return super.onStartCommand(intent, flags, startId)
     }
 
@@ -117,7 +117,7 @@ class ExpoForegroundActionsService : HeadlessJsTaskService() {
     }
 
     private fun createNotificationChannel() {
-        Log.d(LOG_TAG, "createNotificationChannel")
+        AndroidLog.d(LOG_TAG, "createNotificationChannel")
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val serviceChannel = NotificationChannel(CHANNEL_ID, "Foreground Service Channel",
@@ -128,7 +128,7 @@ class ExpoForegroundActionsService : HeadlessJsTaskService() {
     }
 
     override fun getTaskConfig(intent: Intent): HeadlessJsTaskConfig? {
-        Log.d(LOG_TAG, "getTaskConfig called")
+        AndroidLog.d(LOG_TAG, "getTaskConfig called")
         return intent.extras?.let { originalExtras ->
             // Create a new Bundle with only the supported data
             val taskData = Bundle().apply {
