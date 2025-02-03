@@ -97,9 +97,10 @@ class ExpoForegroundActionsModule : Module() {
 
         AsyncFunction("stopForegroundAction") { identifier: Int, isAutomatic: Boolean, promise: Promise ->
             try {
+                AndroidLog.d(LOG_TAG, "Current intents in map: ${intentMap.keys.joinToString()}")
                 val intent = intentMap[identifier]
                 if (intent != null) {
-                    AndroidLog.d(LOG_TAG, "Attempting to stop service with action: ${intent.action} (${if (isAutomatic) "automatic" else "manual"})")
+                    AndroidLog.d(LOG_TAG, "Found intent for ID $identifier with action: ${intent.action}")
                     val stopped = context.stopService(intent)
                     if (stopped) {
                         intentMap.remove(identifier)
