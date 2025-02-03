@@ -29,3 +29,9 @@ export interface ForegroundApi {
 }
 
 export type ForegroundAction<Params> = (params: Params, api: ForegroundApi) => Promise<void>;
+
+export type ServiceStatus = {
+  isRunning: boolean;
+  /** Only available on iOS */
+  remaining?: number;
+}
