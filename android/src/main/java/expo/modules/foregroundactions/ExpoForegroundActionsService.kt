@@ -68,10 +68,7 @@ class ExpoForegroundActionsService : HeadlessJsTaskService() {
         requireNotNull(localExtras) { "Extras cannot be null" }
 
         val notificationId = localExtras.getInt("notificationId")
-        AndroidLog.d(LOG_TAG, "Service started with ID: $notificationId")
-
-        // The action will be unique for each service instance
-        AndroidLog.d(LOG_TAG, "Service started with action: ${intent?.action}")
+        AndroidLog.d(LOG_TAG, "Starting service with ID: $notificationId (action: ${intent?.action})")
 
         val notificationTitle: String = localExtras.getString("notificationTitle")!!
         val notificationDesc: String = localExtras.getString("notificationDesc")!!
@@ -82,33 +79,29 @@ class ExpoForegroundActionsService : HeadlessJsTaskService() {
         val notificationIndeterminate: Boolean = localExtras.getBoolean("notificationIndeterminate")
         val linkingURI: String = localExtras.getString("linkingURI")!!
 
-        AndroidLog.d(LOG_TAG, "notificationIconInt")
-        AndroidLog.d(LOG_TAG, notificationIconInt.toString())
-        AndroidLog.d(LOG_TAG, "On create door dion")
-        AndroidLog.d(LOG_TAG, "onStartCommand")
-        createNotificationChannel() // Necessary creating channel for API 26+
-        AndroidLog.d(LOG_TAG, "After createNotificationChannel")
+        AndroidLog.d(LOG_TAG, "Creating notification channel and building notification")
+        createNotificationChannel()
 
-        AndroidLog.d(LOG_TAG, "buildNotification")
         val notification: Notification = buildNotification(
-                this,
-                notificationTitle,
-                notificationDesc,
-                notificationColor,
-                notificationIconInt,
-                notificationProgress,
-                notificationMaxProgress,
-                notificationIndeterminate,
-                linkingURI
+            this,
+            notificationTitle,
+            notificationDesc,
+            notificationColor,
+            notificationIconInt,
+            notificationProgress,
+            notificationMaxProgress,
+            notificationIndeterminate,
+            linkingURI
         )
-        AndroidLog.d(LOG_TAG, "Starting foreground")
 
+        AndroidLog.d(LOG_TAG, "Starting foreground service")
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             startForeground(notificationId, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC)
         } else {
             startForeground(notificationId, notification)
         }
-        AndroidLog.d(LOG_TAG, "After foreground")
+        AndroidLog.d(LOG_TAG, "Service started successfully")
+
         return super.onStartCommand(intent, flags, startId)
     }
 
