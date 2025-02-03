@@ -8,7 +8,9 @@ import { platformApiLevel } from "expo-device";
 import {
   ExpireEventPayload,
   AndroidSettings,
-  ForegroundApi, Settings
+  ForegroundApi,
+  Settings,
+  ServiceStatus
 } from "./ExpoForegroundActions.types";
 import ExpoForegroundActionsModule from "./ExpoForegroundActionsModule";
 import { AppRegistry, AppState } from "react-native";
@@ -115,23 +117,28 @@ const runIos = async (action: (identifier: number) => Promise<void>, settings: S
 
 const runAndroid = async (action: (identifier: number) => Promise<void>, options: AndroidSettings, settings: Settings) => new Promise<void>(async (resolve, reject) => {
   try {
-    /*First we register the headless task so we can run it from the Foreground service*/
     AppRegistry.registerHeadlessTask(options.headlessTaskName, () => async (taskdata: { notificationId: number }) => {
       const { notificationId } = taskdata;
-      /*Then we start the actuall foreground action, we all do this in the headless task, without touching UI, we can still update UI be using something like Realm for example*/
       try {
         settings?.events?.onIdentifier?.(notificationId);
         await action(notificationId);
-        await stopForegroundAction(notificationId);
+
+        // Check if service is still running before attempting to stop
+        const status = await getServiceStatus(notificationId);
+        if (status.isRunning) {
+          await stopForegroundAction(notificationId);
+        }
         resolve();
       } catch (e) {
-        /*We do this to make sure its ALWAYS stopped*/
-        await stopForegroundAction(notificationId);
+        // Even in error case, only stop if still running
+        const status = await getServiceStatus(notificationId);
+        if (status.isRunning) {
+          await stopForegroundAction(notificationId);
+        }
         throw e;
       }
     });
     await startForegroundAction(options);
-
   } catch (e) {
     reject(e);
     throw e;
@@ -158,16 +165,31 @@ export const getForegroundIdentifiers = async (): Promise<number> => ExpoForegro
 // noinspection JSUnusedGlobalSymbols
 export const getRanTaskCount = () => ranTaskCount;
 
-export const getBackgroundTimeRemaining = async (): Promise<number> => {
-  if (Platform.OS !== "ios") return -1;
-  return await ExpoForegroundActionsModule.getBackgroundTimeRemaining();
-};
-
-
 export function addExpirationListener(
   listener: (event: ExpireEventPayload) => void
 ): Subscription {
   return emitter.addListener("onExpirationEvent", listener);
 }
 
-export { ExpireEventPayload };
+export const getServiceStatus = async (id: number): Promise<ServiceStatus> => {
+  if (Platform.OS === "ios") {
+    const remaining = await ExpoForegroundActionsModule.getBackgroundTimeRemaining();
+    return {
+      isRunning: remaining > 0,
+      remaining
+    };
+  }
+
+  if (Platform.OS === "android") {
+    const isRunning = await ExpoForegroundActionsModule.isServiceRunning(id);
+    return {
+      isRunning
+    };
+  }
+
+  return {
+    isRunning: false
+  };
+};
+
+export { ExpireEventPayload, ServiceStatus };
