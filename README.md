@@ -188,52 +188,35 @@ export const runForegroundedAction = async (
 - `androidSettings`: Android-specific settings for the foreground action.
 - `settings`: Additional settings for the foreground action.
 
-#### `startForegroundAction`
-
-```typescript
-export const startForegroundAction = async (
-  options?: AndroidSettings
-): Promise<number>;
-```
-
-- `options`: Android-specific settings for the foreground action.
-- **Note:** _Only one foreground action may run at a time. If you try to start a new action while one is active, the call will fail. Use `stopForegroundAction` to stop the running task first._
+Note: Only one foreground action may run at a time. Starting a new action while one is active will fail.
 
 #### `stopForegroundAction`
 
 ```typescript
-export const stopForegroundAction = async (id: number): Promise<void>;
+export const stopForegroundAction = async (): Promise<void>;
 ```
 
-- `id`: The unique identifier of the foreground action to stop.
+Stops the currently running foreground action (if any).
 
 #### `updateForegroundedAction`
 
 ```typescript
 export const updateForegroundedAction = async (
-  id: number,
   options: AndroidSettings
 ): Promise<void>;
 ```
 
-- `id`: The unique identifier of the foreground action to update.
 - `options`: Updated Android-specific settings for the foreground action.
 
-#### `getForegroundIdentifiers`
-
-```typescript
-export const getForegroundIdentifiers = async (): Promise<number>;
-```
-
-- Retrieves the identifier of the currently running foreground action (if any).
+Updates the notification settings of the currently running foreground action (Android only).
 
 #### `getServiceStatus`
 
 ```typescript
-export const getServiceStatus = async (id: number): Promise<ServiceStatus>;
+export const getServiceStatus = async (): Promise<ServiceStatus>;
 ```
 
-- Retrieves the service status for a given task.
+- Returns the status of the currently running foreground service (if any).
 
 _(Force-stopping all foreground actions is no longer supported.)_
 
@@ -275,7 +258,6 @@ export type ServiceStatus = {
 ```
 
 - `remaining`: The remaining time in seconds before the foreground action expires.
-- `identifier`: The unique identifier of the foreground action.
 
 #### `AndroidSettings`
 
@@ -310,14 +292,14 @@ export interface AndroidSettings {
 ```typescript
 export interface Settings {
   events?: {
-    onIdentifier?: (identifier: number) => void;
+    onBeforeExpires?: () => Promise<void>;
   }
   runInJS?: boolean,
 }
 ```
 
 - `events`: Event handlers for foreground actions.
-    - `onIdentifier`: A callback function called when an identifier is generated.
+    - `onBeforeExpires`: A callback function called when the service is about to expire.
 - `runInJS`: Indicates whether to run the foreground action without using a headless task or ios background task.
 
 ---
