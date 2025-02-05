@@ -197,6 +197,7 @@ export const startForegroundAction = async (
 ```
 
 - `options`: Android-specific settings for the foreground action.
+- **Note:** _Only one foreground action may run at a time. If you try to start a new action while one is active, the call will fail. Use `stopForegroundAction` to stop the running task first._
 
 #### `stopForegroundAction`
 
@@ -218,29 +219,13 @@ export const updateForegroundedAction = async (
 - `id`: The unique identifier of the foreground action to update.
 - `options`: Updated Android-specific settings for the foreground action.
 
-#### `forceStopAllForegroundActions`
-
-```typescript
-export const forceStopAllForegroundActions = async (): Promise<void>;
-```
-
-- Forcefully stops all running foreground actions.
-
 #### `getForegroundIdentifiers`
 
 ```typescript
 export const getForegroundIdentifiers = async (): Promise<number>;
 ```
 
-- Retrieves the identifiers of all currently running foreground actions.
-
-#### `getRanTaskCount`
-
-```typescript
-export const getRanTaskCount = () => ranTaskCount;
-```
-
-- Retrieves the count of tasks that have run.
+- Retrieves the identifier of the currently running foreground action (if any).
 
 #### `getServiceStatus`
 
@@ -248,7 +233,9 @@ export const getRanTaskCount = () => ranTaskCount;
 export const getServiceStatus = async (id: number): Promise<ServiceStatus>;
 ```
 
-- Retrieves the service status for a given task, which includes a flag for whether the service is running and, on iOS, the remaining background execution time.
+- Retrieves the service status for a given task.
+
+_(Force-stopping all foreground actions is no longer supported.)_
 
 #### `addExpirationListener`
 
