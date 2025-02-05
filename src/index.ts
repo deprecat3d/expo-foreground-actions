@@ -160,7 +160,13 @@ export const getServiceStatus = async (): Promise<ServiceStatus> => {
   return { isRunning: false };
 };
 
-export { ExpireEventPayload, ServiceStatus };
+export {
+  ExpireEventPayload,
+  ServiceStatus,
+  AndroidSettings,
+  Settings,
+  ForegroundApi
+};
 
 export function addExpirationListener(
   listener: (event: ExpireEventPayload) => void
