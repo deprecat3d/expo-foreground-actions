@@ -22,28 +22,26 @@ public class ExpoForegroundActionsModule: Module {
                 promise.reject("E_TASK_ALREADY_RUNNING", "A foreground action is already running. Please stop it before starting a new one.")
                 return
             }
-
             var backgroundTaskIdentifier: UIBackgroundTaskIdentifier = .invalid
-
             backgroundTaskIdentifier = UIApplication.shared.beginBackgroundTask {
-                // Expiration block: fire expiration event, end the task, and mark it as invalid
+                // Expiration block: fire expiration event, end the task, and mark it as invalid.
                 self.onExpiration(amount: UIApplication.shared.backgroundTimeRemaining, identifier: backgroundTaskIdentifier)
                 UIApplication.shared.endBackgroundTask(backgroundTaskIdentifier)
                 self.currentBackgroundTaskIdentifier = .invalid
             }
             self.currentBackgroundTaskIdentifier = backgroundTaskIdentifier
-            print(backgroundTaskIdentifier.rawValue);
+            print(backgroundTaskIdentifier.rawValue)
             promise.resolve(backgroundTaskIdentifier.rawValue)
         }
-        AsyncFunction("stopForegroundAction") { (taskIdentifier: Int, isAutomatic: Bool = false, promise: Promise) in
-            let taskID = UIBackgroundTaskIdentifier(rawValue: taskIdentifier)
-            // Ensure the task to stop is the currently running one
-            if taskID == .invalid || self.currentBackgroundTaskIdentifier.rawValue != taskIdentifier {
-                print("Background task with identifier \(taskIdentifier) does not exist or has already been ended (\(isAutomatic ? "automatic" : "manual"))")
+
+        AsyncFunction("stopForegroundAction") { (isAutomatic: Bool, promise: Promise) in
+            if self.currentBackgroundTaskIdentifier == .invalid {
+                print("No running background task to stop (\(isAutomatic ? "automatic" : "manual")).")
                 promise.resolve()
                 return
             }
-            print("Stopping background task \(taskIdentifier) (\(isAutomatic ? "automatic" : "manual"))")
+            let taskID = self.currentBackgroundTaskIdentifier
+            print("Stopping background task \(taskID.rawValue) (\(isAutomatic ? "automatic" : "manual")).")
             UIApplication.shared.endBackgroundTask(taskID)
             self.currentBackgroundTaskIdentifier = .invalid
             promise.resolve()
@@ -60,11 +58,10 @@ public class ExpoForegroundActionsModule: Module {
                 promise.resolve([])
             }
         }
-
     }
 
     @objc
-    private func onExpiration(amount:Double,identifier:UIBackgroundTaskIdentifier) {
+    private func onExpiration(amount: Double, identifier: UIBackgroundTaskIdentifier) {
         sendEvent(ON_EXPIRATION_EVENT, [
             "remaining": amount,
             "identifier": identifier.rawValue
