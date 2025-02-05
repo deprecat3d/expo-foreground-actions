@@ -18,14 +18,13 @@ export interface AndroidSettings {
 
 export interface Settings {
   events?: {
-    onIdentifier?: (identifier: number) => void;
-  }
+    onBeforeExpires?: () => Promise<void>;
+  };
   runInJS?: boolean,
 }
 
 export interface ForegroundApi {
   headlessTaskName: string;
-  identifier: number;
 }
 
 export type ForegroundAction<Params> = (params: Params, api: ForegroundApi) => Promise<void>;
