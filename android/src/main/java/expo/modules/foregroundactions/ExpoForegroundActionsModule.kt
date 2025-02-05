@@ -18,7 +18,6 @@ import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
 import android.util.Log as AndroidLog
 
-
 const val ON_EXPIRATION_EVENT = "onExpirationEvent"
 
 class ExpoForegroundActionsModule : Module() {
@@ -28,6 +27,8 @@ class ExpoForegroundActionsModule : Module() {
         private const val RESULT_CODE_OK = 0
         private const val BASE_ACTION = "expo.modules.foregroundactions.ACTION_FOREGROUND_SERVICE"
         private const val LOG_TAG = "ExpoForegroundActions"
+        // Define a private constant for the task ID since only one task can run.
+        private const val TASK_ID = 1
     }
 
     private data class ServiceInfo(
@@ -35,49 +36,44 @@ class ExpoForegroundActionsModule : Module() {
         val startTime: Long = System.currentTimeMillis()
     )
 
+    // Since only one task is allowed, we use a constant task ID (1) and do not need dynamic IDs.
     private var currentTask: ServiceInfo? = null
-    private var currentId: Int = 0
 
-    // Each module class must implement the definition function. The definition consists of components
-    // that describes the module's functionality and behavior.
-    // See https://docs.expo.dev/modules/module-api for more details about available components.
     @SuppressLint("DiscouragedApi")
     override fun definition() = ModuleDefinition {
         Events(ON_EXPIRATION_EVENT)
-
-        // Sets the name of the module that JavaScript code will use to refer to the module. Takes a string as an argument.
-        // Can be inferred from module's class name, but it's recommended to set it explicitly for clarity.
-        // The module will be accessible from `requireNativeModule('ExpoForegroundActions')` in JavaScript.
         Name("ExpoForegroundActions")
-
 
         AsyncFunction("startForegroundAction") { options: ExpoForegroundOptions, promise: Promise ->
             try {
-                // If a task is already running, reject the new request.
                 if (currentTask != null) {
                     AndroidLog.e(LOG_TAG, "Attempted to start a new foreground action while one is already running")
                     throw Exception("A foreground action is already running. Please stop it before starting a new one.")
                 }
-                currentId++
-
+                // Using the constant task identifier TASK_ID.
+                val taskId = TASK_ID
                 val intent = Intent(context, ExpoForegroundActionsService::class.java).apply {
-                    action = "$BASE_ACTION.$currentId"
+                    action = "$BASE_ACTION.$taskId"
                 }
 
-                // Add all the extras
-                intent.putExtra("notificationId", currentId)  // Use this as the identifier
+                // Add extras – these include the notification details, etc.
+                intent.putExtra("notificationId", taskId)
                 intent.putExtra("headlessTaskName", options.headlessTaskName)
                 intent.putExtra("notificationTitle", options.notificationTitle)
                 intent.putExtra("notificationDesc", options.notificationDesc)
                 intent.putExtra("notificationColor", options.notificationColor)
-                val notificationIconInt: Int = context.resources.getIdentifier(options.notificationIconName, options.notificationIconType, context.packageName)
+                val notificationIconInt: Int = context.resources.getIdentifier(
+                    options.notificationIconName,
+                    options.notificationIconType,
+                    context.packageName
+                )
                 intent.putExtra("notificationIconInt", notificationIconInt)
                 intent.putExtra("notificationProgress", options.notificationProgress)
                 intent.putExtra("notificationMaxProgress", options.notificationMaxProgress)
                 intent.putExtra("notificationIndeterminate", options.notificationIndeterminate)
                 intent.putExtra("linkingURI", options.linkingURI)
 
-                // Add ResultReceiver so that onDestroy in the service fires the expiration event
+                // Add a ResultReceiver so that onDestroy in the service fires the expiration event.
                 intent.putExtra(RECEIVER_KEY, object : ResultReceiver(Handler(Looper.getMainLooper())) {
                     override fun onReceiveResult(resultCode: Int, resultData: Bundle?) {
                         if (resultCode == RESULT_CODE_OK) {
@@ -90,55 +86,56 @@ class ExpoForegroundActionsModule : Module() {
                     }
                 })
 
-                // Store the current task.
                 currentTask = ServiceInfo(intent.clone() as Intent)
-
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                     context.startForegroundService(intent)
                 } else {
                     context.startService(intent)
                 }
-                promise.resolve(currentId)
+                // Always resolve with the constant task ID (even though JS will not use it)
+                promise.resolve(taskId)
             } catch (e: Exception) {
                 AndroidLog.e(LOG_TAG, "Error starting foreground action: ${e.message}")
                 promise.reject(e.toCodedException())
             }
         }
 
-        AsyncFunction("stopForegroundAction") { identifier: Int, isAutomatic: Boolean, promise: Promise ->
+        AsyncFunction("stopForegroundAction") { isAutomatic: Boolean, promise: Promise ->
             try {
-                // Check if the running task matches the provided identifier.
-                val activeId = currentTask?.intent?.getIntExtra("notificationId", -1)
-                if (activeId == identifier) {
+                if (currentTask != null) {
                     stopCurrentTask()
-                    AndroidLog.d(LOG_TAG, "Successfully stopped task with identifier $identifier (${if (isAutomatic) "automatic" else "manual"})")
+                    AndroidLog.d(LOG_TAG, "Successfully stopped the running task (${if (isAutomatic) "automatic" else "manual"})")
                 } else {
-                    AndroidLog.w(LOG_TAG, "Task with identifier $identifier is not the current task (${if (isAutomatic) "automatic" else "manual"})")
+                    AndroidLog.w(LOG_TAG, "No running task to stop (${if (isAutomatic) "automatic" else "manual"})")
                 }
-
                 promise.resolve(null)
             } catch (e: Exception) {
-                AndroidLog.e(LOG_TAG, "Error stopping task with identifier $identifier: ${e.message} (${if (isAutomatic) "automatic" else "manual"})")
+                AndroidLog.e(LOG_TAG, "Error stopping task: ${e.message} (${if (isAutomatic) "automatic" else "manual"})")
                 promise.reject(e.toCodedException())
             }
         }
 
-        AsyncFunction("updateForegroundedAction") { identifier: Int, options: ExpoForegroundOptions, promise: Promise ->
+        AsyncFunction("updateForegroundedAction") { options: ExpoForegroundOptions, promise: Promise ->
             try {
-                val notificationIconInt: Int = context.resources.getIdentifier(options.notificationIconName, options.notificationIconType, context.packageName)
+                val notificationIconInt: Int = context.resources.getIdentifier(
+                    options.notificationIconName,
+                    options.notificationIconType,
+                    context.packageName
+                )
                 val notification: Notification = ExpoForegroundActionsService.buildNotification(
-                        context,
-                        options.notificationTitle,
-                        options.notificationDesc,
-                        Color.parseColor(options.notificationColor),
-                        notificationIconInt,
-                        options.notificationProgress,
-                        options.notificationMaxProgress,
-                        options.notificationIndeterminate,
-                        options.linkingURI,
-                );
+                    context,
+                    options.notificationTitle,
+                    options.notificationDesc,
+                    Color.parseColor(options.notificationColor),
+                    notificationIconInt,
+                    options.notificationProgress,
+                    options.notificationMaxProgress,
+                    options.notificationIndeterminate,
+                    options.linkingURI
+                )
                 val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-                notificationManager.notify(identifier, notification)
+                // Notify using the constant task ID TASK_ID.
+                notificationManager.notify(TASK_ID, notification)
                 promise.resolve(null)
             } catch (e: Exception) {
                 AndroidLog.e(LOG_TAG, "Error updating foreground action: ${e.message}")
@@ -146,18 +143,9 @@ class ExpoForegroundActionsModule : Module() {
             }
         }
 
-        AsyncFunction("getForegroundIdentifiers") { promise: Promise ->
-            if (currentTask != null) {
-                promise.resolve(currentTask!!.intent.getIntExtra("notificationId", -1))
-            } else {
-                promise.resolve(arrayOf<Int>())
-            }
-        }
-
-        AsyncFunction("isServiceRunning") { identifier: Int, promise: Promise ->
+        AsyncFunction("isServiceRunning") { promise: Promise ->
             try {
-                val activeId = currentTask?.intent?.getIntExtra("notificationId", -1)
-                promise.resolve(activeId == identifier)
+                promise.resolve(currentTask != null)
             } catch (e: Exception) {
                 AndroidLog.e(LOG_TAG, "Error checking service status: ${e.message}")
                 promise.reject(e.toCodedException())
@@ -165,23 +153,16 @@ class ExpoForegroundActionsModule : Module() {
         }
     }
 
-    private val context
+    private val context: Context
         get() = requireNotNull(appContext.reactContext) {
-            "React Application Context is null"
-        }
-
-    private val applicationContext
-        get() = requireNotNull(this.context.applicationContext) {
             "React Application Context is null"
         }
 
     private fun stopCurrentTask() {
         currentTask?.let { task ->
             val id = task.intent.getIntExtra("notificationId", -1)
-            // Cancel the notification
             val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             notificationManager.cancel(id)
-            // Stop the service which will trigger onDestroy and fire the expiration listener
             context.stopService(Intent(context, ExpoForegroundActionsService::class.java))
             currentTask = null
         }
