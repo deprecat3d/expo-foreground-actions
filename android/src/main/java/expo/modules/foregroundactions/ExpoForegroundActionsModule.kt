@@ -35,8 +35,8 @@ class ExpoForegroundActionsModule : Module() {
         val startTime: Long = System.currentTimeMillis()
     )
 
-    private val intentMap: MutableMap<Int, ServiceInfo> = mutableMapOf()
-    private var currentReferenceId: Int = 0
+    private var currentTask: ServiceInfo? = null
+    private var currentId: Int = 0
 
     // Each module class must implement the definition function. The definition consists of components
     // that describes the module's functionality and behavior.
@@ -53,14 +53,19 @@ class ExpoForegroundActionsModule : Module() {
 
         AsyncFunction("startForegroundAction") { options: ExpoForegroundOptions, promise: Promise ->
             try {
-                currentReferenceId++
+                // If a task is already running, reject the new request.
+                if (currentTask != null) {
+                    AndroidLog.e(LOG_TAG, "Attempted to start a new foreground action while one is already running")
+                    throw Exception("A foreground action is already running. Please stop it before starting a new one.")
+                }
+                currentId++
 
                 val intent = Intent(context, ExpoForegroundActionsService::class.java).apply {
-                    action = "$BASE_ACTION.$currentReferenceId"
+                    action = "$BASE_ACTION.$currentId"
                 }
 
                 // Add all the extras
-                intent.putExtra("notificationId", currentReferenceId)  // Use this as the identifier
+                intent.putExtra("notificationId", currentId)  // Use this as the identifier
                 intent.putExtra("headlessTaskName", options.headlessTaskName)
                 intent.putExtra("notificationTitle", options.notificationTitle)
                 intent.putExtra("notificationDesc", options.notificationDesc)
@@ -72,7 +77,7 @@ class ExpoForegroundActionsModule : Module() {
                 intent.putExtra("notificationIndeterminate", options.notificationIndeterminate)
                 intent.putExtra("linkingURI", options.linkingURI)
 
-                // Add ResultReceiver
+                // Add ResultReceiver so that onDestroy in the service fires the expiration event
                 intent.putExtra(RECEIVER_KEY, object : ResultReceiver(Handler(Looper.getMainLooper())) {
                     override fun onReceiveResult(resultCode: Int, resultData: Bundle?) {
                         if (resultCode == RESULT_CODE_OK) {
@@ -85,15 +90,15 @@ class ExpoForegroundActionsModule : Module() {
                     }
                 })
 
-                // Store the intent with its unique identifier
-                intentMap[currentReferenceId] = ServiceInfo(intent.clone() as Intent)
+                // Store the current task.
+                currentTask = ServiceInfo(intent.clone() as Intent)
 
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                     context.startForegroundService(intent)
                 } else {
                     context.startService(intent)
                 }
-                promise.resolve(currentReferenceId)
+                promise.resolve(currentId)
             } catch (e: Exception) {
                 AndroidLog.e(LOG_TAG, "Error starting foreground action: ${e.message}")
                 promise.reject(e.toCodedException())
@@ -102,29 +107,15 @@ class ExpoForegroundActionsModule : Module() {
 
         AsyncFunction("stopForegroundAction") { identifier: Int, isAutomatic: Boolean, promise: Promise ->
             try {
-                AndroidLog.d(LOG_TAG, "Current intents in map: ${intentMap.keys.joinToString()}")
-                val serviceInfo = intentMap[identifier]
-                if (serviceInfo != null) {
-                    // First, cancel the notification
-                    val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-                    notificationManager.cancel(identifier)
-                    AndroidLog.d(LOG_TAG, "Canceled notification for ID $identifier (${if (isAutomatic) "automatic" else "manual"})")
-
-                    // Remove from our map
-                    intentMap.remove(identifier)
-
-                    // If this was the last notification, stop the service
-                    if (intentMap.isEmpty()) {
-                        AndroidLog.d(LOG_TAG, "No more active notifications, stopping service (${if (isAutomatic) "automatic" else "manual"})")
-                        context.stopService(Intent(context, ExpoForegroundActionsService::class.java))
-                    } else {
-                        AndroidLog.d(LOG_TAG, "Service kept alive with ${intentMap.size} remaining notifications (${if (isAutomatic) "automatic" else "manual"})")
-                    }
-
+                // Check if the running task matches the provided identifier.
+                val activeId = currentTask?.intent?.getIntExtra("notificationId", -1)
+                if (activeId == identifier) {
+                    stopCurrentTask()
                     AndroidLog.d(LOG_TAG, "Successfully stopped task with identifier $identifier (${if (isAutomatic) "automatic" else "manual"})")
                 } else {
-                    AndroidLog.w(LOG_TAG, "Task with identifier $identifier does not exist or has already been ended (${if (isAutomatic) "automatic" else "manual"})")
+                    AndroidLog.w(LOG_TAG, "Task with identifier $identifier is not the current task (${if (isAutomatic) "automatic" else "manual"})")
                 }
+
                 promise.resolve(null)
             } catch (e: Exception) {
                 AndroidLog.e(LOG_TAG, "Error stopping task with identifier $identifier: ${e.message} (${if (isAutomatic) "automatic" else "manual"})")
@@ -155,34 +146,18 @@ class ExpoForegroundActionsModule : Module() {
             }
         }
 
-        AsyncFunction("forceStopAllForegroundActions") { promise: Promise ->
-            try {
-                // Cancel all notifications
-                val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-                intentMap.keys.forEach { id ->
-                    AndroidLog.d(LOG_TAG, "Canceling notification for ID $id")
-                    notificationManager.cancel(id)
-                }
-                intentMap.clear()
-
-                // Stop the service
-                AndroidLog.d(LOG_TAG, "Stopping service")
-                context.stopService(Intent(context, ExpoForegroundActionsService::class.java))
-                promise.resolve(null)
-            } catch (e: Exception) {
-                AndroidLog.e(LOG_TAG, "Error force stopping all tasks: ${e.message}")
-                promise.reject(e.toCodedException())
-            }
-        }
         AsyncFunction("getForegroundIdentifiers") { promise: Promise ->
-            val identifiers = intentMap.keys.toTypedArray()
-            promise.resolve(identifiers)
+            if (currentTask != null) {
+                promise.resolve(currentTask!!.intent.getIntExtra("notificationId", -1))
+            } else {
+                promise.resolve(arrayOf<Int>())
+            }
         }
 
         AsyncFunction("isServiceRunning") { identifier: Int, promise: Promise ->
             try {
-                val serviceInfo = intentMap[identifier]
-                promise.resolve(serviceInfo != null)
+                val activeId = currentTask?.intent?.getIntExtra("notificationId", -1)
+                promise.resolve(activeId == identifier)
             } catch (e: Exception) {
                 AndroidLog.e(LOG_TAG, "Error checking service status: ${e.message}")
                 promise.reject(e.toCodedException())
@@ -199,4 +174,16 @@ class ExpoForegroundActionsModule : Module() {
         get() = requireNotNull(this.context.applicationContext) {
             "React Application Context is null"
         }
+
+    private fun stopCurrentTask() {
+        currentTask?.let { task ->
+            val id = task.intent.getIntExtra("notificationId", -1)
+            // Cancel the notification
+            val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            notificationManager.cancel(id)
+            // Stop the service which will trigger onDestroy and fire the expiration listener
+            context.stopService(Intent(context, ExpoForegroundActionsService::class.java))
+            currentTask = null
+        }
+    }
 }
