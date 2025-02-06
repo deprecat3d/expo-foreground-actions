@@ -100,14 +100,20 @@ Please ensure you have the following dependencies installed on your system:
 
 1. Clone the expo-foreground-actions repository:
 
+  Add to `package.json` dependencies:
+  ```json
+  "expo-foreground-actions": "github:deprecat3d/expo-foreground-actions",
+  ```
+
+  Update packages:
    **NPM**
     ```sh
-    npm install expo-foreground-actions
+    npm install
     ```
 
    **Yarn**
     ```sh
-    yarn add expo-foreground-actions
+    yarn install
     ```
 
 2. Install the config plugin:
