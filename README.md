@@ -98,7 +98,7 @@ Please ensure you have the following dependencies installed on your system:
 
 ### 🔧 Installation
 
-1. Clone the expo-foreground-actions repository:
+1. Install the package:
 
   Add to `package.json` dependencies:
   ```json
