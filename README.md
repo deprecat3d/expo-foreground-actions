@@ -26,6 +26,8 @@
 
 ---
 
+> **This is an updated and fixed version of the original package, which is no longer maintained. It contains breaking changes from the last published version of the original.**
+
 ## 📖 Table of Contents
 
 - [📖 Table of Contents](#-table-of-contents)
@@ -45,8 +47,6 @@
 ---
 
 ## 📍 Overview
-
-**This is an updated and fixed version of the original package, which is no longer maintained. It contains breaking changes from the last published version of the original.**
 
 Start actions that continue to run in the grace period after the user switches apps. This library facilitates the
 execution of **ios**'s `beginBackgroundTaskWithName` and **android**'s `startForegroundService` methods. The primary
