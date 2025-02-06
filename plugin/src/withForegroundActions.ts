@@ -1,4 +1,4 @@
-import { ConfigPlugin, withAndroidManifest, withDangerousMod, AndroidConfig } from '@expo/config-plugins';
+import { ConfigPlugin, withAndroidManifest, withDangerousMod, AndroidConfig } from 'expo/config-plugins';
 import fs from 'fs';
 import path from 'path';
 import { generateImageAsync } from '@expo/image-utils';
