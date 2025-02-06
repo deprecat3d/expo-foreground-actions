@@ -26,7 +26,7 @@
 
 ---
 
-> **This is an updated and fixed version of the original package, which is no longer maintained. It contains breaking changes from the last published version of the original.**
+> **This is an updated and fixed version of the original package, which is no longer maintained. It contains breaking changes from the last published version of the original and is versioned starting from 1.0.**
 
 ## 📖 Table of Contents
 
