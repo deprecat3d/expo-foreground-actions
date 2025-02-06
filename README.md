@@ -78,8 +78,7 @@ the [Example](https://github.com/Acetyld/expo-foreground-actions/tree/main/examp
 
 ### For IOS:
 
-- Receive notifications when the background execution time is about to expire. This feature allows users to save their
-  data and terminate tasks gracefully.
+- Handle an event that emits when the background execution time is about to expire. Save data and terminate tasks gracefully.
 
 ### Web Support:
 
