@@ -1,4 +1,4 @@
-import { ConfigPlugin, createRunOncePlugin } from 'expo/config-plugins';
+import { ConfigPlugin, createRunOncePlugin } from '@expo/config-plugins';
 import { withForegroundActions } from './withForegroundActions';
 
 const withExpoForegroundActions: ConfigPlugin<{ androidNotificationIcon?: string }> = (config, props) => {
