@@ -67,13 +67,13 @@ the [Example](https://github.com/Acetyld/expo-foreground-actions/tree/main/examp
 ### For IOS & Android:
 
 - Execute JavaScript while the app is in the background.
-- Run multiple foreground actions simultaneously.
-- Forcefully terminate all foreground actions.
+- Stop execution when you're finished (manually or automatically when the routine completes).
 
 ### For Android:
 
-- Display notifications with customizable titles, descriptions, and optional progress bars, along with support for deep
+- Display a notification with customizable titles, descriptions, and optional progress bars, along with support for deep
   linking.
+- Update the notification on the fly.
 - Comply with the latest Android 34+ background policy: allows a foreground service to run without forcing a persistent, “in your face” notification on the status bar. Instead, a low‑priority (minimal) notification is used that only appears in the notification drawer if the user opens it.
 
 ### For IOS:
