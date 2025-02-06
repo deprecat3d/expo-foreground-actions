@@ -119,7 +119,7 @@ Please ensure you have the following dependencies installed on your system:
       "expo": {
         "plugins": [
           [
-            "./plugins/expo-foreground-actions",
+            "expo-foreground-actions",
             {
               "androidNotificationIcon": "./assets/notification.png"
             }
