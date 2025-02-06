@@ -40,7 +40,8 @@
     "@types/react-native": "*",
     "expo-module-scripts": "^4.0.3",
     "expo-modules-core": "^1.5.11",
-    "expo-device": "^6.0.2"
+    "expo-device": "^6.0.2",
+    "@expo/config-plugins": "*"
   },
   "peerDependencies": {
     "expo": "*",
