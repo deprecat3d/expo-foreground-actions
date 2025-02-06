@@ -57,7 +57,7 @@ seconds on both platforms. However, it's important to note that this library is 
 tracking. iOS's limited 30-second window makes it impractical for such purposes. For background location tracking,
 alternatives like WorkManager or GTaskScheduler are more suitable.
 
-For usage instructions, please refer to
+[OUT OF DATE] For usage instructions, please refer to
 the [Example](https://github.com/Acetyld/expo-foreground-actions/tree/main/example) provided.
 
 ---
@@ -74,8 +74,7 @@ the [Example](https://github.com/Acetyld/expo-foreground-actions/tree/main/examp
 
 - Display notifications with customizable titles, descriptions, and optional progress bars, along with support for deep
   linking.
-- Comply with the latest Android 34+ background policy, ensuring that foreground services continue to run without
-  displaying a visible notification. Users can still access these services from the notification drawer.
+- Comply with the latest Android 34+ background policy: allows a foreground service to run without forcing a persistent, “in your face” notification on the status bar. Instead, a low‑priority (minimal) notification is used that only appears in the notification drawer if the user opens it.
 
 ### For IOS:
 
@@ -84,43 +83,9 @@ the [Example](https://github.com/Acetyld/expo-foreground-actions/tree/main/examp
 
 ### Web Support:
 
-- Limited support for web platforms. We recommend using the `runInJS` method due to potential errors when attempting to
-  run foreground actions on web browsers.
+- This plugin is not intended for web platforms since it relies on native Android and iOS functionality. The `runInJS` mode is only provided as a fallback for older Android devices, and this setting is forced to true internally in that scenario.
 
 ---
-
-## 📂 Repository Structure
-
-```sh
-└── expo-foreground-actions/
-    ├── .eslintrc.js
-    ├── android/
-    ├── example/
-    │   ├── App.tsx
-    │   ├── android/
-    │   ├── app.json
-    │   ├── babel.config.js
-    │   ├── metro.config.js
-    │   ├── package-lock.json
-    │   ├── package.json
-    │   ├── plugins/
-    │   │   └── expo-foreground-actions.js
-    │   ├── tsconfig.json
-    │   ├── webpack.config.js
-    │   └── yarn.lock
-    ├── ios/
-    ├── package-lock.json
-    ├── package.json
-    ├── plugins/
-    │   └── expo-foreground-actions.js
-    ├── src/
-    │   ├── ExpoForegroundActions.types.ts
-    │   ├── ExpoForegroundActionsModule.ts
-    │   └── index.ts
-    ├── tsconfig.json
-    └── yarn.lock
-
-```
 
 ## 🚀 Getting Started
 
@@ -128,7 +93,7 @@ the [Example](https://github.com/Acetyld/expo-foreground-actions/tree/main/examp
 
 Please ensure you have the following dependencies installed on your system:
 
-`- ℹ️ Expo v49+`
+`- ℹ️ Expo v51+`
 
 `- ℹ️ Bare/Manage workflow, we do not support Expo GO`
 
@@ -146,35 +111,35 @@ Please ensure you have the following dependencies installed on your system:
     yarn add expo-foreground-actions
     ```
 
-2. Install the plugin, for now download the repo and copy
-   the [plugins](https://github.com/Acetyld/expo-foreground-actions/tree/main/plugins) folder to your project root.
-3. Then update your app.json to include the plugin and a scheme if u wanna use the plugin with a
-   deeplink. <br/>https://docs.expo.dev/guides/linking/
-    ```sh
-   "expo": {
-      "scheme": "myapp",
-      "plugins": [
-        [
-          "./plugins/expo-foreground-actions"
+2. Install the config plugin:
+
+    To integrate Expo Foreground Actions using the Expo config plugin, add the plugin to your Expo configuration file (e.g. `app.json` or `app.config.js`). For example:
+
+    ```json
+    {
+      "expo": {
+        "plugins": [
+          [
+            "./plugins/expo-foreground-actions",
+            {
+              "androidNotificationIcon": "./assets/notification.png"
+            }
+          ]
         ]
-      ],
-   }
+      }
+    }
     ```
 
-3. Make sure the plugin is loaded in your app.json, you can do this by running **prebuild on managed** or by running *
-   *pod install/gradle build** on bare.
+    **Notes:**
 
-### 🤖 How to use?
-
-For the time being, dedicated documentation is not available. However, you can explore the usage of current methods in
-the provided example app. Refer to the [Example](https://github.com/Acetyld/expo-foreground-actions/tree/main/example)
-folder to understand how to utilize this package effectively.
-
-![Example](assets/App_tsx.png)
+    - The path provided for `"androidNotificationIcon"` is relative to your project's root directory.
+    - If you're using `expo-notifications`, our config plugin will fall back to the icon you specified in that plugin's config. Just ensure that `expo-notifications` config plugin is listed **before** this plugin in your plugins array in `app.json`.
 
 ### 🤖 Functions
 
 #### `runForegroundedAction`
+
+This function executes a foreground action and is intended to be invoked only from the global scope. Do not call it from within the React component tree.
 
 ```typescript
 export const runForegroundedAction = async (
@@ -188,7 +153,9 @@ export const runForegroundedAction = async (
 - `androidSettings`: Android-specific settings for the foreground action.
 - `settings`: Additional settings for the foreground action.
 
-Note: Only one foreground action may run at a time. Starting a new action while one is active will fail.
+**Note: Only one foreground action may run at a time. Starting a new action while one is active will fail.**
+
+This was changed from an earlier version of the package due to a bug where some notification center items on Android would become inaccessible.
 
 #### `stopForegroundAction`
 
@@ -218,8 +185,6 @@ export const getServiceStatus = async (): Promise<ServiceStatus>;
 
 - Returns the status of the currently running foreground service (if any).
 
-_(Force-stopping all foreground actions is no longer supported.)_
-
 #### `addExpirationListener`
 
 ```typescript
@@ -234,7 +199,7 @@ const unsubscribe = addExpirationListener((event) => {
 unsubscribe?.remove();
 ```
 
-- Adds an event listener for when the service expires or is manually stopped.
+- Adds an event listener for when the service is about to expire (iOS - you must stop your code before the service is ended or your app will be terminated - you can also use the onBeforeExpires hook in settings) or is manually or otherwise stopped.
 
 ### 🤖 Interfaces
 
@@ -304,14 +269,6 @@ export interface Settings {
 
 ---
 
-## 🛣 Project Roadmap
-
-> - [X] `ℹ️ Task 1: Initial launch`
-> - [X] `ℹ️ Task 2: Possiblity to run multiple foreground tasks`
-> - [ ] `ℹ️ Any idea's are welcome =)`
-
----
-
 ## 🤝 Contributing
 
 Contributions are welcome! Here are several ways you can contribute:
@@ -371,5 +328,4 @@ the [LICENSE](https://choosealicense.com/licenses/) file.
 
 [**Return**](#Top)
 
----
 
