@@ -252,8 +252,8 @@ export interface AndroidSettings {
 - `notificationTitle`: Title of the notification shown during the foreground action.
 - `notificationDesc`: Description of the notification.
 - `notificationColor`: Color of the notification.
-- `notificationIconName`: Name of the notification icon.
-- `notificationIconType`: Type of the notification icon.
+- `notificationIconName`: Name of the notification icon. Use `"notification_icon"` to use the custom image you provided to the config plugin.
+- `notificationIconType`: Type of the notification icon. Use `"drawable"` to use the custom image you provided to the config plugin.
 - `notificationProgress`: Current progress value for the notification.
 - `notificationMaxProgress`: Maximum progress value for the notification.
 - `notificationIndeterminate`: Indicates if the notification progress is indeterminate.
