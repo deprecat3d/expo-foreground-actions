@@ -42,6 +42,13 @@ public class ExpoForegroundActionsModule: Module {
             }
             let taskID = self.currentBackgroundTaskIdentifier
             print("Stopping background task \(taskID.rawValue) (\(isAutomatic ? "automatic" : "manual")).")
+
+            // Fire the expiration event before stopping
+            self.onExpiration(
+                amount: UIApplication.shared.backgroundTimeRemaining,
+                identifier: taskID
+            )
+
             UIApplication.shared.endBackgroundTask(taskID)
             self.currentBackgroundTaskIdentifier = .invalid
             promise.resolve()
@@ -62,8 +69,12 @@ public class ExpoForegroundActionsModule: Module {
 
     @objc
     private func onExpiration(amount: Double, identifier: UIBackgroundTaskIdentifier) {
+        // When manually stopping or when in foreground, amount will be DBL_MAX
+        // In these cases, we should send 0 like Android does
+        let remaining = amount == Double.greatestFiniteMagnitude ? 0.0 : amount
+
         sendEvent(ON_EXPIRATION_EVENT, [
-            "remaining": amount,
+            "remaining": remaining,
             "identifier": identifier.rawValue
         ])
     }
