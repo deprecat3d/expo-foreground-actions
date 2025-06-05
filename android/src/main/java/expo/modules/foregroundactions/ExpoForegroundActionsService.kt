@@ -120,9 +120,9 @@ class ExpoForegroundActionsService : HeadlessJsTaskService() {
         }
     }
 
-    protected override fun getTaskConfig(intent: Intent): HeadlessJsTaskConfig? {
+    protected override fun getTaskConfig(intent: Intent?): HeadlessJsTaskConfig? {
         AndroidLog.d(LOG_TAG, "getTaskConfig called")
-        return intent.extras?.let { originalExtras ->
+        return intent?.extras?.let { originalExtras ->
             // Create a new Bundle with only the supported data
             val taskData = Bundle().apply {
                 // Copy only the necessary data
